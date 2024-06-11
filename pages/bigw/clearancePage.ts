@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+const playwright = require('playwright');
+
 
 export enum categoryFilterOptions {
     BabyNursery = 'field-8404-baby-nursery-clearance__Baby & Nursery Clearance',
@@ -37,28 +39,42 @@ export default class ClearancePage {
     }
 
     getItems = async () => {
-        // await this.page.locator("ProductTile_tileLink__UPDgb").first().click()
-        // await this.page.getByAltText("Gro-To Bad Dream Buster Calming Room Spray     70mL").click()
-        const items = await this.page.getByTestId("product-tile").all()
-        for (const item of items) {
-            
-            // console.log(await item.getAttribute("aria-label"))
-            const priceElements = await item.getByTestId("price-section").locator(".PriceRange.ProductPrice.variant-large-thin").getByTestId("price").getByTestId("price-value").all()
-            for (const pe of priceElements) {
-                const hasAttribute = await pe.evaluate(el => el.hasAttribute('content'))
-                if (hasAttribute)
-                    console.log(await item.getAttribute("aria-label"))
-                    console.log(await pe.getAttribute("content"))
-            }
-            
-
-
-            
+        var results = {}
+        while(true) {
+            try {
+                const moreButton = this.page.getByRole("link", {"name": "Load more"}) 
+                await moreButton.click({timeout: 5000})
+              } catch (error) {
+                if (error instanceof playwright.errors.TimeoutError) {
+                    break
+                }
+              }
 
         }
-        
-        
-        // let title = items.nth(0).locator("ProductTile_tileLink__UPDgb").locator("ProductTile_name__pqMxl")
-        // console.log(await title.textContent())
+        const items = await this.page.getByTestId("search-results").getByTestId("product-tile").all()
+        for (const item of items) {
+            
+            const priceElements = await item.getByTestId("price-section").locator(".PriceRange.ProductPrice.variant-large-thin").getByTestId("price").getByTestId("price-value").all()
+            const itemName = await item.getAttribute("aria-label")
+            // console.log(itemName)
+            if (itemName) {
+                results[itemName] = ""
+                for (const pe of priceElements) {
+                    const hasAttribute = await pe.evaluate(el => el.hasAttribute('content'))
+                    if (hasAttribute) {
+                        const price1 = await pe.getAttribute("content")
+                        // console.log(price1)
+                        results[itemName] += price1
+                    } else {
+                        const price2 = await pe.textContent()
+                        // console.log(price2)
+                        if(price2) results[itemName] += ` - ${price2}`
+                    }
+                }
+                // console.log(itemName + ": " + results[itemName])
+            }
+    
+        }
+        return results
     }
 }

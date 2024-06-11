@@ -9,8 +9,8 @@ test('can search', async ({ page }) => {
     await loginPage.searchForText("clearance")
     let clearancePage = new ClearancePage(page)
     await page.waitForTimeout(3000); 
-    // await clearancePage.scrollToCategoryFilter()
+    await clearancePage.scrollToCategoryFilter()
     await clearancePage.clickFilter("category")
     await clearancePage.selectFilterOption(categoryFilterOptions.BabyNursery)
-    await clearancePage.getItems()
+    console.log(await clearancePage.getItems())
 });
