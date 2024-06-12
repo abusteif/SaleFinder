@@ -12,6 +12,7 @@
     "@types/node": "^20.12.13"
   },
   "dependencies": {
-    "csv-stringify": "^6.5.0"
+    "csv-stringify": "^6.5.0",
+    "sqlite3": "latest"
   }
 }
