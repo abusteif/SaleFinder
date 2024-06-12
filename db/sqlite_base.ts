@@ -1,5 +1,6 @@
 import sqlite3 from "sqlite3";
 import { Database } from 'sqlite3';
+import { bigw } from "../configs/db";
 
 export default class SQLBase {
 
@@ -16,13 +17,9 @@ export default class SQLBase {
       }
 
     createTable = async (tableName: String): Promise<void> => {
+
         return new Promise((resolve, reject) => {
-            const createTableSQL = `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                price TEXT NOT NULL UNIQUE,
-                date TEXT NOT NULL
-            )`;
+            const createTableSQL = `CREATE TABLE IF NOT EXISTS ${tableName} (${bigw.itemsTable})`;
 
             if (this.db) {
                 this.db.run(createTableSQL, (err: Error | null) => {
@@ -31,6 +28,7 @@ export default class SQLBase {
                         reject(err)
                     } else {
                         console.log('Table created or already exists.')
+                        
                         resolve()
                     }
                 });
@@ -39,6 +37,7 @@ export default class SQLBase {
             }
         })
     }
+
        
     }
 
