@@ -14,15 +14,15 @@ test('bigw', async ({ page }) => {
     let email = new Email()
     sql.createTable("categories", common.categoriesTable)
     sql.createTable(store, storeDBObject.itemsTable)
-    // console.log(await sql.getValuesFromTable("categories", ["name", "store"]))
+    // sql.updateRow(store, {price:100, date:"datetime('now')"}, {item:"b.box Fill 'n Feed Squeeze Pouch"})
 
     await homeScreen.goto()
 
     await homeScreen.searchForText("clearance")
     let clearancePage = new ClearancePage(page)
     await page.waitForTimeout(3000); 
-    await clearancePage.scrollToCategoryFilter()
-    await clearancePage.clickFilter("category")
+    // await clearancePage.scrollToCategoryFilter()
+    // await clearancePage.clickFilter("category")
     
     // let categories = await clearancePage.getCategories()
     // for (let cat of categories) {
@@ -40,12 +40,11 @@ test('bigw', async ({ page }) => {
     let priceChangeItems: ChangedItem[] = []
     let newItems: NewItem[] = []
 
-    // for (const [item, price] of Object.entries(itemList)) {
     for (const item of websiteItemList) {
         let newPrice = item.price
         let name = item.name
         let tableItemDetails = await sql.getValuesFromTableWithConditions(store, {item: name}) as ItemTablesItem[]
-        // if item doesn't exists, add it to newItems array and to the items table
+        // if item doesn't exist, add it to newItems array and to the items table
         if (tableItemDetails.length == 0) {
             let newItem: NewItem = {
                 name,
@@ -61,28 +60,24 @@ test('bigw', async ({ page }) => {
                 // console.log(`Nothing changed for this item ${tableItemDetails[0].item}`)
             else {
                 priceChangeItems.push( {name, oldPrice, newPrice})
-                // console.log(`price change: old: ${oldPrice}, new: ${newPrice}`)
+                sql.updateRow(store, {price:newPrice, date:"datetime('now')"}, {item:name})
+                console.log(`price change: old: ${oldPrice}, new: ${newPrice}`)
             }
 
         }
     }
+    // if item is no longer on sale, remove it from items table
+    let existingItems = await sql.getValuesFromTable(store, ["item", "price"]) as ItemTablesItem[]
+    for (const oldItem of existingItems) {
+        let fieldExists = websiteItemList.some(obj => obj.name === oldItem.item);
+        if(!fieldExists)     
+            sql.removeRow(store, {item:oldItem.item})
+    }
     
-    console.log(`new items:`)
-    console.log(newItems)
-    console.log(`items with price change:`)
-    console.log(priceChangeItems)
-
-
-        // else {
-        //     console.log(`item not found: ${item}, ${price}`)
-        //     let itemDetails = await sql.getValuesFromTableWithConditions(store, {item}) as ItemTablesItem[]
-        //     console.log(itemDetails)
-
-            // sql.insertIntoTable(store, {item, price, date: "datetime('now')"})
-
-
-    // }
-    
+    // console.log(`new items:`)
+    // console.log(newItems)
+    // console.log(`items with price change:`)
+    // console.log(priceChangeItems)
 
 
 })

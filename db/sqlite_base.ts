@@ -58,7 +58,6 @@ export default class SQLBase {
 
     insertIntoTable = async (tableName: string, fieldsValues: {}): Promise<void> => {
 
-        // return new Promise((resolve, reject) => {
             let fields = ""
             let values = ""
             for (const [key, value] of Object.entries(fieldsValues)) {
@@ -83,7 +82,7 @@ export default class SQLBase {
 
     }
 
-    getValuesFromTable = async (tableName: string, requiredFields: Array<string>): Promise<void> => {
+    getValuesFromTable = async (tableName: string, requiredFields: Array<string>): Promise<any> => {
         let getValuesSql = "";
         requiredFields.forEach(element => {
             getValuesSql = `${getValuesSql} ${element},`
@@ -93,7 +92,7 @@ export default class SQLBase {
 
     }
 
-    getValuesFromTableWithConditions = async (tableName: string, conditions: {}): Promise<any> => {
+    getValuesFromTableWithConditions = async (tableName: string, conditions: {}): Promise<any[]> => {
 
         let getValuesSql = `SELECT * FROM ${tableName} WHERE`
         for (const [key, value] of Object.entries(conditions)) {
@@ -106,6 +105,37 @@ export default class SQLBase {
 
     }
     
+    updateRow = async (tableName: string, updateValues: {}, conditions: {}): Promise<void> => {
+
+        let updateEntry = `UPDATE ${tableName} SET `
+        for (const [key, value] of Object.entries(updateValues)) {
+            if (exemptedKeywords.includes(value as string))
+                updateEntry = `${updateEntry}${key}=${value}, `
+            else
+                updateEntry = `${updateEntry}${key}="${value}", `
+        }
+        updateEntry = `${updateEntry.slice(0,-2)} WHERE`
+        for (const [key, value] of Object.entries(conditions)) {
+            updateEntry = `${updateEntry} ${key}="${value}",`
+        }
+        updateEntry = updateEntry.slice(0,-1)
+
+        console.log(updateEntry)
+        await this.runSqlQueryWrite(updateEntry, `Entry updated`, "Error while updating entry")
+    }
+
+    removeRow = async (tableName: string, conditions: {}): Promise<void> => {
+
+        let removeEntry = `DELETE FROM ${tableName} WHERE `
+        for (const [key, value] of Object.entries(conditions)) {
+            removeEntry = `${removeEntry}${key}="${value}" AND `
+        }
+        removeEntry = removeEntry.slice(0,-5)
+
+        console.log(removeEntry)
+        await this.runSqlQueryWrite(removeEntry, `Entry removed`, "Error while removing entry")
+    }
+
 
     
 }

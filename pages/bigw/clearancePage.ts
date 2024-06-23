@@ -42,11 +42,17 @@ export default class ClearancePage {
 
     selectFilterOption = async (option:categoryFilterOptions) => {
         try {
+            await this.categoryFilter.click()
             await this.page.getByRole("checkbox", {name: "Baby & Nursery Clearance"}).check()
+            await this.categoryFilter.click()
+
         } catch (error) {
             if (error.message.includes("Clicking the checkbox did not change its state")) {}
-            else throw error
-        }
+            else {
+                console.log(error)
+                throw error
+            }
+        } 
         // this.clickFilter("category")
     }
 
@@ -55,7 +61,8 @@ export default class ClearancePage {
         while(true) {
             try {
                 const moreButton = this.page.getByRole("link", {"name": "Load more"}) 
-                await moreButton.click({timeout: 5000})
+                await moreButton.click({timeout: 10000})
+    
               } catch (error) {
                 if (error instanceof playwright.errors.TimeoutError) {
                     break
