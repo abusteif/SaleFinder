@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { bigw } from '../../configs/generic'
 
-export default class BigWLoginPage {
+export default class BigWHomePage {
     readonly page: Page;
     readonly searchField: Locator;
     readonly searchButton: Locator;

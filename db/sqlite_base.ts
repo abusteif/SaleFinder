@@ -1,6 +1,6 @@
 import sqlite3 from "sqlite3";
 import { Database } from 'sqlite3';
-import { bigw } from "../configs/db";
+import { exemptedKeywords } from "../configs/db";
 
 export default class SQLBase {
 
@@ -16,19 +16,17 @@ export default class SQLBase {
         });
       }
 
-    createTable = async (tableName: String): Promise<void> => {
+    runSqlQueryWrite = async (query: string, successMessage: string, errorMessage: string): Promise<void> => {
 
         return new Promise((resolve, reject) => {
-            const createTableSQL = `CREATE TABLE IF NOT EXISTS ${tableName} (${bigw.itemsTable})`;
 
             if (this.db) {
-                this.db.run(createTableSQL, (err: Error | null) => {
+                this.db.run(query, (err: Error | null) => {
                     if (err) {
-                        console.error(`Error creating table: ${err.message}`)
+                        console.error(`${errorMessage}: ${err.message}`)
                         reject(err)
                     } else {
-                        console.log('Table created or already exists.')
-                        
+                        console.log(successMessage)
                         resolve()
                     }
                 });
@@ -38,8 +36,79 @@ export default class SQLBase {
         })
     }
 
-       
+    runSqlQueryRead = async (query: string): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            this.db.all(query, [], (err, rows) => {
+                if (err) {
+                    console.error(err.message)
+                    reject(err);
+                    return
+                }
+                resolve(rows);
+            })
+        })
     }
+   
+
+    createTable = async (tableName: string, itemsTable: string): Promise<void> => {
+
+            const createTableSQL = `CREATE TABLE IF NOT EXISTS ${tableName} (${itemsTable})`;
+            await this.runSqlQueryWrite(createTableSQL, `Table "${tableName}" created or already exists.`, "Error creating table")
+    }
+
+    insertIntoTable = async (tableName: string, fieldsValues: {}): Promise<void> => {
+
+        // return new Promise((resolve, reject) => {
+            let fields = ""
+            let values = ""
+            for (const [key, value] of Object.entries(fieldsValues)) {
+                
+                fields = `${fields}, ${key}`
+                if (exemptedKeywords.includes(value as string)) values = `${values}, ${value}`
+                else values = `${values}, "${value}"`
+            }
+            fields = `(${fields.slice(1)})`
+            values = `(${values.slice(1)})`
+
+
+            const insertIntoTable = `INSERT INTO ${tableName} ${fields} VALUES ${values}`
+            console.log(insertIntoTable)
+            try {
+                await this.runSqlQueryWrite(insertIntoTable, "Entry inserted successfully.", "Error inserting into table")
+            } catch (error) {
+                if (error.code == "SQLITE_CONSTRAINT") console.log("item already exists in table")
+                else console.log(error)
+            } 
+
+
+    }
+
+    getValuesFromTable = async (tableName: string, requiredFields: Array<string>): Promise<void> => {
+        let getValuesSql = "";
+        requiredFields.forEach(element => {
+            getValuesSql = `${getValuesSql} ${element},`
+        })
+        getValuesSql = `SELECT${getValuesSql.slice(0, -1)} FROM ${tableName}`
+        return this.runSqlQueryRead(getValuesSql)
+
+    }
+
+    getValuesFromTableWithConditions = async (tableName: string, conditions: {}): Promise<any> => {
+
+        let getValuesSql = `SELECT * FROM ${tableName} WHERE`
+        for (const [key, value] of Object.entries(conditions)) {
+            getValuesSql = `${getValuesSql} ${key}="${value}" AND`
+
+        }
+        getValuesSql = getValuesSql.slice(0, -4)
+
+        return this.runSqlQueryRead(getValuesSql)
+
+    }
+    
+
+    
+}
 
 
 
