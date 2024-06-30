@@ -1,3 +1,5 @@
+import { Locator } from "@playwright/test"
+
 export interface ItemTablesItem {
     id: string
     item: string
@@ -21,3 +23,8 @@ export interface ChangedItem {
   newPrice: number
 
 }
+
+// export interface CategoryItem {
+//   name: string,
+//   element: Locator
+// }

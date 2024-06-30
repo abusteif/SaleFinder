@@ -71,7 +71,7 @@ export default class SQLBase {
 
 
             const insertIntoTable = `INSERT INTO ${tableName} ${fields} VALUES ${values}`
-            console.log(insertIntoTable)
+            // console.log(insertIntoTable)
             try {
                 await this.runSqlQueryWrite(insertIntoTable, "Entry inserted successfully.", "Error inserting into table")
             } catch (error) {
@@ -82,25 +82,45 @@ export default class SQLBase {
 
     }
 
-    getValuesFromTable = async (tableName: string, requiredFields: Array<string>): Promise<any> => {
-        let getValuesSql = "";
-        requiredFields.forEach(element => {
-            getValuesSql = `${getValuesSql} ${element},`
-        })
-        getValuesSql = `SELECT${getValuesSql.slice(0, -1)} FROM ${tableName}`
-        return this.runSqlQueryRead(getValuesSql)
+    // getValuesFromTable = async (tableName: string, requiredFields: Array<string>): Promise<any> => {
+        // let getValuesSql = "";
+        // requiredFields.forEach(element => {
+        //     getValuesSql = `${getValuesSql} ${element},`
+        // })
+        // getValuesSql = `SELECT${getValuesSql.slice(0, -1)} FROM ${tableName}`
+        // return this.runSqlQueryRead(getValuesSql)
 
-    }
+    // }
 
-    getValuesFromTableWithConditions = async (tableName: string, conditions: {}): Promise<any[]> => {
+    getValuesFromTable = async (tableName: string, conditions: {} | null, requiredFields: string[] | null): Promise<any[]> => {
 
-        let getValuesSql = `SELECT * FROM ${tableName} WHERE`
-        for (const [key, value] of Object.entries(conditions)) {
-            getValuesSql = `${getValuesSql} ${key}="${value}" AND`
-
+        let requiredFieldsStatement = ""
+        if (requiredFields) {
+            requiredFields.forEach(element => {
+                requiredFieldsStatement = `${requiredFieldsStatement} ${element},`
+            })
+            requiredFieldsStatement =  requiredFieldsStatement.slice(0, -1)
+        } else {
+            requiredFieldsStatement = "*"
         }
-        getValuesSql = getValuesSql.slice(0, -4)
+        let conditionStatement = ""
+        if (conditions) {
+            for (const [key, value] of Object.entries(conditions)) {
+                conditionStatement = `${conditionStatement} ${key}="${value}" AND`
+    
+            }
+            conditionStatement = `WHERE ${conditionStatement.slice(0, -4)}`
+        }
+        let getValuesSql = `SELECT ${requiredFieldsStatement} FROM ${tableName} ${conditionStatement}`
 
+        // let getValuesSql = `SELECT * FROM ${tableName} WHERE`
+        // for (const [key, value] of Object.entries(conditions)) {
+        //     getValuesSql = `${getValuesSql} ${key}="${value}" AND`
+
+        // }
+        // getValuesSql = getValuesSql.slice(0, -4)
+        // console.log(getValuesSql)
+// 
         return this.runSqlQueryRead(getValuesSql)
 
     }
@@ -120,7 +140,7 @@ export default class SQLBase {
         }
         updateEntry = updateEntry.slice(0,-1)
 
-        console.log(updateEntry)
+        // console.log(updateEntry)
         await this.runSqlQueryWrite(updateEntry, `Entry updated`, "Error while updating entry")
     }
 
@@ -132,7 +152,7 @@ export default class SQLBase {
         }
         removeEntry = removeEntry.slice(0,-5)
 
-        console.log(removeEntry)
+        // console.log(removeEntry)
         await this.runSqlQueryWrite(removeEntry, `Entry removed`, "Error while removing entry")
     }
 

@@ -1,13 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { WebsiteItem } from '../../models/common';
+import { MAX_RETRY_ATTEMPTS } from '../../configs/generic';
 const playwright = require('playwright');
 
-
-export enum categoryFilterOptions {
-    BabyNursery = 'field-8404-baby-nursery-clearance__Baby & Nursery Clearance',
-    Reset = 'reset',
-    Button = 'button'
-  }
+// BabyNursery = 'field-8404-baby-nursery-clearance__Baby & Nursery Clearance',
 
 
 export default class ClearancePage {
@@ -25,26 +21,41 @@ export default class ClearancePage {
         }        
     }
 
-    clickFilter = async (filter:string) => {
-        await this.categoryFilter.click()
+    clickFilter = async () => {
+        let retryNum = 0
+        while (true && retryNum < MAX_RETRY_ATTEMPTS) {
+            try {
+                await this.categoryFilter.click()
+                await this.page.getByTestId("facet-value-section-category")
+                break
+            } catch (error) {
+                console.log("filter dropdown didn't appear")
+                retryNum++
+            }
+        }
     }
 
-    getCategories = async (): Promise<(string | null)[]> => {
-        let categories: (string | null)[] = []
+    getCategoryElement = async (category: string): Promise<Locator> => {
+        return this.page.getByRole("checkbox", {name: category, exact: true})
+
+    }
+
+    getCategories = async (): Promise<string[]> => {
+        await this.clickFilter()
+        let categories: string[] = []
         let filterElements = await this.page.locator("li.FacetInputWrapper_FacetInputWrapper__kkptH").all()
         for (const element of filterElements) {
-            let filterItem = await element.locator(".checkbox-label").textContent()
-            categories.push(filterItem)
-
+            let name = await element.locator(".checkbox-label").textContent() ?? ""
+            categories = [...categories, name]
         }
+        await this.categoryFilter.click()
         return categories
     }
 
-    selectFilterOption = async (option:categoryFilterOptions) => {
+    selectFilterOption = async (cat: string) => {
+        let catElement = await this.getCategoryElement(cat)
         try {
-            await this.categoryFilter.click()
-            await this.page.getByRole("checkbox", {name: "Baby & Nursery Clearance"}).check()
-            await this.categoryFilter.click()
+            await catElement.check()
 
         } catch (error) {
             if (error.message.includes("Clicking the checkbox did not change its state")) {}
@@ -53,15 +64,30 @@ export default class ClearancePage {
                 throw error
             }
         } 
-        // this.clickFilter("category")
     }
+
+    unselectFilterOption = async (cat: string) => {
+        let catElement = await this.getCategoryElement(cat)
+        try {
+            await catElement.uncheck()
+        } catch (error) {
+            if (error.message.includes("Clicking the checkbox did not change its state")) { } 
+            else {
+                console.log(error)
+                throw error
+            }
+        }
+}
 
     getItems = async (): Promise<WebsiteItem[]> => {
         var results: WebsiteItem[] = []
-        while(true) {
+        let retryNum = 0
+        while (true && retryNum < MAX_RETRY_ATTEMPTS) {
             try {
                 const moreButton = this.page.getByRole("link", {"name": "Load more"}) 
                 await moreButton.click({timeout: 10000})
+                retryNum++
+                await this.page.waitForTimeout(1000); 
     
               } catch (error) {
                 if (error instanceof playwright.errors.TimeoutError) {
@@ -70,6 +96,7 @@ export default class ClearancePage {
               }
 
         }
+        console.log(retryNum)
         const items = await this.page.getByTestId("search-results").getByTestId("product-tile").all()
         for (const item of items) {
            
@@ -78,7 +105,7 @@ export default class ClearancePage {
             // console.log(itemName)
             if (itemName) {
                 let itemDetails: WebsiteItem = {
-                    name: itemName,
+                    name: itemName.replace('"', ''),
                     price: 0
                 }
                 // results[itemName] = 0
@@ -97,7 +124,8 @@ export default class ClearancePage {
                     // }
                 }
                 // console.log(itemName + ": " + results[itemName])
-                results.push(itemDetails)
+                const itemExists = results.some(item => item.name === itemDetails.name)
+                if (!itemExists) results.push(itemDetails)
             }
     
         }
